@@ -18,27 +18,34 @@ therefore the image width — is nondeterministic. Three captures of the same UR
 1559 and 1300 px wide with identical heights. Clipping to the viewport column pins the width by
 construction, so both sides are dimensionally identical and nothing is silently cropped.
 
-The live source is also captured **twice** each run, so its own run-to-run variance is measured
-rather than assumed. Two full runs:
+The live source is also captured **twice** per local run, so its own run-to-run variance is
+measured rather than assumed. Three runs: two against the local bundle, and a third against this
+**published** site as actually served by GitHub Pages.
 
-| Viewport | Clone vs source (run 1 / run 2) | Source vs *itself* (run 1 / run 2) |
+| Viewport | Clone vs source (local 1 / local 2 / **published**) | Source vs *itself* (local 1 / local 2) |
 |---|---|---|
-| 1440x7585 | **100.000% / 100.000%** | 100.000% / 99.705% |
-| 1280x7849 | 99.754% / 99.752% | 99.993% / 99.660% |
-| 1024x8606 | **100.000% / 100.000%** | 100.000% / 100.000% |
-| 768x9259 | **100.000% / 100.000%** | 100.000% / 100.000% |
-| 430x6129 | **100.000% / 100.000%** | 100.000% / 100.000% |
-| 390x6277 | **100.000% / 100.000%** | 100.000% / 100.000% |
+| 1440x7585 | 100.000% / 100.000% / 99.774% | 100.000% / 99.705% |
+| 1280x7849 | 99.754% / 99.752% / 99.712% | 99.993% / 99.660% |
+| 1024x8606 | **100.000% / 100.000% / 100.000%** | 100.000% / 100.000% |
+| 768x9259 | **100.000% / 100.000% / 100.000%** | 100.000% / 100.000% |
+| 430x6129 | **100.000% / 100.000% / 100.000%** | 100.000% / 100.000% |
+| 390x6277 | **100.000% / 100.000% / 100.000%** | 100.000% / 100.000% |
 
-Five of the six breakpoints are **exact — 0 mismatched pixels of 2.4M–10.9M, in both runs.**
+Four of the six breakpoints are **exact — 0 mismatched pixels of 2.4M–8.8M, in all three runs.**
 
-**1280 is the one width with a real difference, and it is smaller than the source's own churn.**
-The delta is ~24,700 px (0.248%) and is confined to a single 400px band, y=1100–1499. That band is
-occupied by a `testimonial-items … layout-carousel … swiper` with 4 slides, measured at y=1142–1434:
-the testimonial carousel is simply resting on a different slide. Every pixel outside that band
-matches exactly. In run 2 the live source differed **from itself** at that width by 34,118 px
-(99.660%) — more than the clone differs from it — so this sits inside the source's own variance,
-not above it.
+**The two desktop widths differ only in one component: the testimonial carousel.** Locating the
+differing pixels by row band:
+
+- 1280, published run: 28,979 px (0.288%), **100% of them** inside y=1100–1399.
+- 1440, published run: 24,719 px (0.226%), **24,521 of them (99.2%)** inside y=1100–1399; the
+  remaining 198 px are scattered in the hero at y=200–499.
+
+That band holds a `testimonial-items … layout-carousel … swiper` with 4 slides, measured at
+y=1142–1434. The carousel is simply resting on a different slide. This is dynamic content, not
+clone infidelity, and it is **inside the source's own variance**: on consecutive loads the live
+source differed *from itself* by 32,259 px at 1440 (99.705%) and 34,118 px at 1280 (99.660%) —
+in both cases more than the clone differs from the source. At 1440 the clone matched the source
+*exactly* in two of the three runs.
 
 All 12 acceptance gates pass, with 0 hard issues.
 
@@ -82,8 +89,9 @@ Preserved verbatim: all markup, styling, imagery, and the site's own presentatio
 ## Known limitations
 
 - **Single page.** Links to other routes point at the live site.
-- **Cart is not live.** The product widget requests `dispenza/ajax/cart_html`; a static host cannot
-  serve it, so that one request 404s. It does not reach `joyleaf.com`.
+- **Cart is not live.** The product widget POSTs to `dispenza/ajax/cart_html`; a static host cannot
+  serve it, so GitHub Pages answers `405` and the cart stays empty. This is the only console error
+  on the published page, and the request does not reach `joyleaf.com`.
 - **Fifteen unused popups** (`sgp_1`–`sgp_15`) carry the AJAX flag. Nothing on this page opens them,
   so they cannot fire or fail; their bodies were not captured rather than invented.
 - **~2.0 MB of third-party tracker payloads still sit in `_xorigin/`** (Google Tag Manager, Microsoft
